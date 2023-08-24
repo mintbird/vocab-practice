@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import styled, { css } from "styled-components";
 import SoundWave from "./sound-wave";
 import classNames from "classnames";
+import { useDetectClickOutside } from "react-detect-click-outside";
+import vocabSets from "./vocab-sets.json";
 
 // Color pallette https://www.freepik.com/free-vector/flower-collection_4070755.htm#from_view=detail_alsolike
 
@@ -20,18 +22,28 @@ function buildVocabSet() {
 }
 
 function useVocabSet() {
-	const [vocabSet, setVocabSet] = useState(buildVocabSet());
+	const [vocabSetInfo, setVocabSetInfo] = useState(
+		vocabSets[Object.keys(vocabSets)[0]]
+	);
+	const vocabSet = vocabSetInfo.words;
 	const [vocabIndex, setVocabIndex] = useState(0);
 
 	const getCurrentVocab = () => vocabSet[vocabIndex];
 	const createSpellVocab = (vocab) => {
-		return vocab.replace(/(.)/g, "$1, ") + vocab;
+		return vocab.replace(/(.)/g, "$1, ") + ", , " + vocab;
 	};
 	const createRepeatedVocab = (vocab) => {
-		return `${vocab}, , ${vocab}`;
+		return `${vocab} , , ${vocab}`;
+	};
+
+	const changeVocabSet = (slug) => {
+		setVocabSetInfo(vocabSets[slug]);
+		setVocabIndex(0);
 	};
 
 	return {
+		changeVocabSet,
+		vocabSetInfo,
 		vocabIndex,
 		currentVocab: getCurrentVocab(),
 		repeatedVocab: () => createRepeatedVocab(getCurrentVocab()),
@@ -51,7 +63,7 @@ function useVocabSet() {
 	};
 }
 
-function useTts() {
+function useTts(lang = "en") {
 	const speaker = new SpeechSynthesisUtterance();
 
 	let preferredVoices = {
@@ -68,27 +80,34 @@ function useTts() {
 			pitch: parseFloat(1), // 0.0 - 2.0
 		},
 		// iOS
-		Karen: {
-			volume: parseFloat(1), // 0.0 - 1.0
-			rate: parseFloat(0.7), // 0.1 - 10.0
-			pitch: parseFloat(1), // 0.0 - 2.0
-		},
+		// Karen, Moira, Samantha, Xander, Daniel, Tessa
+		// Kanya (TH)
+		// Samantha: {
+		// 	volume: parseFloat(1), // 0.0 - 1.0
+		// 	rate: parseFloat(0.85), // 0.1 - 10.0
+		// 	pitch: parseFloat(1.1), // 0.0 - 2.0
+		// },
 	};
 
-	speaker.voice = speechSynthesis.getVoices().filter(function (voice) {
-		const isCorrect = !!preferredVoices[voice.name];
+	// Use specific voice for better result
+	if ("en" == lang) {
+		speaker.lang = "en-US";
+		speaker.rate = 0.8;
+		speaker.voice = speechSynthesis.getVoices().filter(function (voice) {
+			const isCorrect = !!preferredVoices[voice.name];
 
-		if (isCorrect) {
-			// Set the attributes.
-			speaker.rate = preferredVoices[voice.name].rate;
-			speaker.volume = preferredVoices[voice.name].volume;
-			speaker.pitch = preferredVoices[voice.name].pitch;
-		}
+			if (isCorrect) {
+				// Set the attributes.
+				speaker.rate = preferredVoices[voice.name].rate;
+				speaker.volume = preferredVoices[voice.name].volume;
+				speaker.pitch = preferredVoices[voice.name].pitch;
+			}
 
-		return isCorrect;
-	})[0];
-
-	const [tts, setTts] = useState(speaker);
+			return isCorrect;
+		})[0];
+	} else if ("th" == lang) {
+		speaker.lang = "th-TH";
+	}
 
 	return {
 		speak: (text, onEnd = null) => {
@@ -101,7 +120,7 @@ function useTts() {
 			// })[0];
 			// msg.rate = 0.1;
 
-			var msg = tts;
+			var msg = speaker;
 
 			// Set the text.
 			msg.text = text ?? "Test test";
@@ -109,6 +128,20 @@ function useTts() {
 
 			if (onEnd && typeof onEnd === "function") {
 				msg.addEventListener("end", (event) => {
+					console.log(
+						`Utterance has finished being spoken after ${event.elapsedTime} seconds.`
+					);
+					onEnd();
+				});
+
+				msg.addEventListener("error", (event) => {
+					console.log(
+						`Utterance has finished being spoken after ${event.elapsedTime} seconds.`
+					);
+					onEnd();
+				});
+
+				msg.addEventListener("pause", (event) => {
 					console.log(
 						`Utterance has finished being spoken after ${event.elapsedTime} seconds.`
 					);
@@ -162,11 +195,19 @@ const ButtonBody = styled.div`
 `;
 
 const PlayButton = (props) => {
+	const { isPlayIcon, ...childProps } = props;
 	return (
-		<ButtonBody className="play-button" {...props}>
-			<svg version="1.1" viewBox="0 0 32 32">
-				<path d="M28,16c-1.219,0-1.797,0.859-2,1.766C25.269,21.03,22.167,26,16,26c-5.523,0-10-4.478-10-10S10.477,6,16,6  c2.24,0,4.295,0.753,5.96,2H20c-1.104,0-2,0.896-2,2s0.896,2,2,2h6c1.104,0,2-0.896,2-2V4c0-1.104-0.896-2-2-2s-2,0.896-2,2v0.518  C21.733,2.932,18.977,2,16,2C8.268,2,2,8.268,2,16s6.268,14,14,14c9.979,0,14-9.5,14-11.875C30,16.672,28.938,16,28,16z" />
-			</svg>
+		<ButtonBody className="play-button" {...childProps}>
+			{props.isPlayIcon && (
+				<svg version="1.1" viewBox="0 0 512 512">
+					<path d="M405.2,232.9L126.8,67.2c-3.4-2-6.9-3.2-10.9-3.2c-10.9,0-19.8,9-19.8,20H96v344h0.1c0,11,8.9,20,19.8,20  c4.1,0,7.5-1.4,11.2-3.4l278.1-165.5c6.6-5.5,10.8-13.8,10.8-23.1C416,246.7,411.8,238.5,405.2,232.9z" />
+				</svg>
+			)}
+			{!props.isPlayIcon && (
+				<svg version="1.1" viewBox="0 0 32 32">
+					<path d="M28,16c-1.219,0-1.797,0.859-2,1.766C25.269,21.03,22.167,26,16,26c-5.523,0-10-4.478-10-10S10.477,6,16,6  c2.24,0,4.295,0.753,5.96,2H20c-1.104,0-2,0.896-2,2s0.896,2,2,2h6c1.104,0,2-0.896,2-2V4c0-1.104-0.896-2-2-2s-2,0.896-2,2v0.518  C21.733,2.932,18.977,2,16,2C8.268,2,2,8.268,2,16s6.268,14,14,14c9.979,0,14-9.5,14-11.875C30,16.672,28.938,16,28,16z" />
+				</svg>
+			)}
 		</ButtonBody>
 	);
 };
@@ -242,11 +283,44 @@ const VocabSetInfo = styled.div`
 
 	padding: 0.5em 1em;
 	border-radius: 8px;
-	background: rgba(255,255,255,0.2);
+	background: rgba(255, 255, 255, 0.2);
+`;
+
+const ListButton = styled((props) => {
+	return (
+		<div {...props}>
+			<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+				<path d="M48 208C21.49 208 0 229.5 0 256s21.49 48 48 48S96 282.5 96 256S74.51 208 48 208zM48 368C21.49 368 0 389.5 0 416s21.49 48 48 48S96 442.5 96 416S74.51 368 48 368zM48 48C21.49 48 0 69.49 0 96s21.49 48 48 48S96 122.5 96 96S74.51 48 48 48zM192 128h288c17.67 0 32-14.33 32-31.1S497.7 64 480 64H192C174.3 64 160 78.33 160 95.1S174.3 128 192 128zM480 224H192C174.3 224 160 238.3 160 256s14.33 32 32 32h288c17.67 0 32-14.33 32-32S497.7 224 480 224zM480 384H192c-17.67 0-32 14.33-32 32s14.33 32 32 32h288c17.67 0 32-14.33 32-32S497.7 384 480 384z" />
+			</svg>
+		</div>
+	);
+})`
+	cursor: pointer;
+	border-radius: 8px;
+	padding: 0.5em;
+	background: rgba(255, 255, 255, 0.6);
+	transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+	display: flex;
+	align-items: center;
+
+	&:hover {
+		background: white;
+	}
+
+	svg {
+		display: block;
+		width: 14px;
+		height: auto;
+		fill: #b47f87;
+	}
 `;
 
 function App() {
+	const [selectedVocabSet, setVocabSet] = useState();
+
 	const {
+		changeVocabSet,
+		vocabSetInfo,
 		vocabIndex,
 		currentVocab,
 		repeatedVocab,
@@ -254,14 +328,32 @@ function App() {
 		nextVocab,
 		previousVocab,
 	} = useVocabSet();
-	const { speak } = useTts();
+	const { speak } = useTts(vocabSetInfo.lang, [vocabSetInfo.lang]);
+	const [isSideNavOpen, setSideNavOpen] = useState(false);
 	const [isPlaying, setPlaying] = useState(false);
 	const [pendingSpeak, setPendingSpeak] = useState("");
+	const sideNavRef = useDetectClickOutside({
+		onTriggered: () => {
+			if (isSideNavOpen) {
+				setSideNavOpen(false);
+			}
+		},
+	});
+	const [isFirstLoad, setFirstLoad] = useState(true);
+
+	const onChangeVocabSet = (slug) => {
+		setPendingSpeak("");
+		setSideNavOpen(false);
+		setPlaying(false);
+		setFirstLoad(true);
+		changeVocabSet(slug);
+	};
 
 	if (pendingSpeak) {
 		setPlaying(true);
 		speak(pendingSpeak, () => {
 			setPlaying(false);
+			setFirstLoad(false);
 		});
 		setPendingSpeak("");
 	}
@@ -271,7 +363,15 @@ function App() {
 			<div className="screen-header">
 				<Logo>VocabPractice</Logo>
 
-				<VocabSetInfo>Day of the week</VocabSetInfo>
+				<div className="main-nav">
+					<VocabSetInfo>{vocabSetInfo.title}</VocabSetInfo>
+					<ListButton
+						onClick={(e) => {
+							setSideNavOpen(!isSideNavOpen);
+							e.stopPropagation();
+						}}
+					/>
+				</div>
 			</div>
 
 			<div className="screen-content">
@@ -283,46 +383,61 @@ function App() {
 				<PracticeNav>
 					<PreviousButton
 						onClick={(e) => {
-							if (!isPlaying) {
-								const newVocab = previousVocab();
-								if (newVocab) {
-									setPendingSpeak(newVocab);
-								}
+							const newVocab = previousVocab();
+							if (newVocab) {
+								setPendingSpeak(newVocab);
 							}
 						}}
 					/>
 
 					<PlayButton
+						isPlayIcon={isFirstLoad}
 						onClick={(e) => {
-							if (!isPlaying) {
-								setPendingSpeak(repeatedVocab());
-							}
+							setPendingSpeak(currentVocab);
 						}}
 					/>
 
 					<SpellButton
 						onClick={(e) => {
-							if (!isPlaying) {
-								setPendingSpeak(spellVocab());
-							}
+							setPendingSpeak(spellVocab());
 						}}
 					/>
 
 					<NextButton
 						onClick={(e) => {
-							if (!isPlaying) {
-								const newVocab = nextVocab();
-								if (newVocab) {
-									setPendingSpeak(newVocab);
-								}
+							const newVocab = nextVocab();
+							if (newVocab) {
+								setPendingSpeak(newVocab);
 							}
 						}}
 					/>
 				</PracticeNav>
 			</div>
+
+			<div
+				ref={sideNavRef}
+				className={classNames("side-nav", {
+					"is-open": isSideNavOpen,
+				})}
+			>
+				<ul className="vocab-set-list">
+					{Object.keys(vocabSets).map((slug, i) => {
+						return (
+							<li key={i}>
+								<span onClick={() => onChangeVocabSet(slug)}>
+									{vocabSets[slug].title}
+								</span>
+							</li>
+						);
+					})}
+				</ul>
+			</div>
 		</div>
 	);
 }
+
+// Required to fix bug in iOS (first read has no have onend event)
+new SpeechSynthesisUtterance();
 
 // Chrome loads voices asynchronously.
 speechSynthesis.getVoices();
