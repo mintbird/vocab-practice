@@ -1,6 +1,6 @@
 {
-	"dayOfTheWeek": {
-		"title": "Day of the week",
+	"daysOfTheWeek": {
+		"title": "Days of the week",
 		"lang": "en",
 		"words": [
 			"Monday",
@@ -12,7 +12,7 @@
 			"Sunday"
 		]
 	},
-	"dayOfTheWeekTH": {
+	"daysOfTheWeekTH": {
 		"title": "วันในสัปดาห์",
 		"lang": "th",
 		"words": [
@@ -23,6 +23,24 @@
 			"ศุกร์",
 			"เสาร์",
 			"อาทิตย์"
+		]
+	},
+	"monthsOfTheYear": {
+		"title": "Months of the year",
+		"lang": "en",
+		"words": [
+			"January",
+			"February",
+			"March",
+			"April",
+			"May",
+			"June",
+			"July",
+			"August",
+			"September",
+			"October",
+			"November",
+			"December"
 		]
 	},
 	"colors": {
