@@ -67,6 +67,11 @@ function useTts(lang = "en") {
 	const speaker = new SpeechSynthesisUtterance();
 
 	let preferredVoices = {
+		"Google US English": {
+			volume: parseFloat(1), // 0.0 - 1.0
+			rate: parseFloat(0.7), // 0.1 - 10.0
+			pitch: parseFloat(1.2), // 0.0 - 2.0
+		},
 		// Windows
 		"Microsoft Zira - English (United States)": {
 			volume: parseFloat(1), // 0.0 - 1.0
