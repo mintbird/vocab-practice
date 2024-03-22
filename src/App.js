@@ -95,12 +95,13 @@ function useTts(lang = "en") {
 		},
 		// iOS
 		// Karen, Moira, Samantha, Xander, Daniel, Tessa
+		// Rocko, Shelley, Reed
 		// Kanya (TH)
-		// Samantha: {
-		// 	volume: parseFloat(1), // 0.0 - 1.0
-		// 	rate: parseFloat(0.85), // 0.1 - 10.0
-		// 	pitch: parseFloat(1.1), // 0.0 - 2.0
-		// },
+		Reed: {
+			volume: parseFloat(1), // 0.0 - 1.0
+			rate: parseFloat(0.85), // 0.1 - 10.0
+			pitch: parseFloat(1.1), // 0.0 - 2.0
+		},
 	};
 
 	// Use specific voice for better result
@@ -108,6 +109,8 @@ function useTts(lang = "en") {
 		speaker.lang = "en-US";
 		speaker.rate = 0.8;
 		speaker.voice = speechSynthesis.getVoices().filter(function (voice) {
+			if ( voice.lang != speaker.lang) return false;
+
 			const isCorrect = !!preferredVoices[voice.name];
 
 			if (isCorrect) {
