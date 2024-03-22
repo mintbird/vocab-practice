@@ -30,7 +30,16 @@ function useVocabSet() {
 
 	const getCurrentVocab = () => vocabSet[vocabIndex];
 	const createSpellVocab = (vocab) => {
-		return vocab.replace(/(.)/g, "$1, ") + ", , " + vocab;
+		var a = vocab
+			.replace(/(.)\1*/g, (match, p1) => {
+				if (match.length === 1) {
+					return `${p1}, `;
+				} else {
+					return `double, ${p1} , `;
+				}
+			})
+			.trim();
+		return a;
 	};
 	const createRepeatedVocab = (vocab) => {
 		return `${vocab} , , ${vocab}`;
